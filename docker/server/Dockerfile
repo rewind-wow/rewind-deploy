@@ -16,8 +16,8 @@
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG VMANGOS_CLIENT_VERSION=5875
-ARG VMANGOS_REPOSITORY_URL=https://github.com/vmangos/core.git
-ARG VMANGOS_REVISION=development
+ARG VMANGOS_REPOSITORY_URL
+ARG VMANGOS_REVISION
 ARG VMANGOS_PATCHES_REPOSITORY_URL
 ARG VMANGOS_USER_ID=1000
 ARG VMANGOS_GROUP_ID=1000
@@ -45,6 +45,8 @@ RUN \
     libssl-dev \
     libtbb-dev \
     zlib1g-dev && \
+  : "${VMANGOS_REPOSITORY_URL:?VMANGOS_REPOSITORY_URL is required}" && \
+  : "${VMANGOS_REVISION:?VMANGOS_REVISION is required}" && \
   git clone "${VMANGOS_REPOSITORY_URL}" /build/core && \
   cd /build/core && \
   git checkout "${VMANGOS_REVISION}" && \

@@ -146,6 +146,34 @@ on specific images staying available for any prolonged period of time. If you
 absolutely need images based on a specific VMaNGOS commit, you can always build
 them yourself instead.
 
+If you build the images yourself, the Dockerfiles require the following build
+arguments: `VMANGOS_REPOSITORY_URL`, `VMANGOS_REVISION` and
+`VMANGOS_WORLD_DB_REPOSITORY_URL`. The upstream defaults are
+`https://github.com/vmangos/core.git`, `development`, and
+`https://github.com/brotalnia/database.git` respectively, but you must pass
+them explicitly when running `docker build`, e.g.:
+
+```sh
+docker build -f docker/server/Dockerfile \
+  --build-arg VMANGOS_REPOSITORY_URL=https://github.com/vmangos/core.git \
+  --build-arg VMANGOS_REVISION=development \
+  .
+
+docker build -f docker/database/Dockerfile \
+  --build-arg VMANGOS_REPOSITORY_URL=https://github.com/vmangos/core.git \
+  --build-arg VMANGOS_REVISION=development \
+  --build-arg VMANGOS_WORLD_DB_REPOSITORY_URL=https://github.com/brotalnia/database.git \
+  .
+```
+
+If you want to build images from your own VMaNGOS fork or a specific revision:
+
+If you only care about custom core code, you can build just the server image and keep using the upstream database image.
+
+1. Build the images with your fork URL and revision using the commands above (replace the `VMANGOS_REPOSITORY_URL` and `VMANGOS_REVISION` values). Tag them (e.g., `my/vmangos-server:custom` and, if needed, `my/vmangos-database:custom`).
+2. Copy `compose.yaml.example` to `compose.yaml` (if you have not already) and set `realmd.image` and `mangosd.image` to your server tag. Set `database.image` only if you also built a custom database image; otherwise leave it pointing to the published one.
+3. Start or update with `docker compose up -d` (and `docker compose pull` beforehand if you push tags to a registry).
+
 > [!TIP]
 > You can find all the currently available `vmangos-server` and
 > `vmangos-database` images [here][image-vmangos-server-versions] and

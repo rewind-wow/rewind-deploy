@@ -25,6 +25,8 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME_SERVER: ${{ github.repository_owner }}/vmangos-server
   IMAGE_NAME_DATABASE: ${{ github.repository_owner }}/vmangos-database
+  VMANGOS_REPOSITORY_URL: https://github.com/vmangos/core.git
+  VMANGOS_WORLD_DB_REPOSITORY_URL: https://github.com/brotalnia/database.git
   PATCHES_REPOSITORY_URL: https://github.com/mserajnik/vmangos-deploy-patches.git
   OCI_ANNOTATION_AUTHORS: ${{ vars.OCI_ANNOTATION_AUTHORS || github.repository_owner }}
   OCI_ANNOTATION_URL: https://github.com/${{ github.repository }}
@@ -248,6 +250,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           provenance: false
           build-args: |
+            VMANGOS_REPOSITORY_URL=${{ env.VMANGOS_REPOSITORY_URL }}
             VMANGOS_REVISION=${{ needs.setup.outputs.commit-hash }}
             VMANGOS_CLIENT_VERSION=${{ matrix.client-version }}
             VMANGOS_PATCHES_REPOSITORY_URL=${{ env.PATCHES_REPOSITORY_URL }}
@@ -390,8 +393,10 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           provenance: false
           build-args: |
+            VMANGOS_REPOSITORY_URL=${{ env.VMANGOS_REPOSITORY_URL }}
             VMANGOS_REVISION=${{ needs.setup.outputs.commit-hash }}
             VMANGOS_PATCHES_REPOSITORY_URL=${{ env.PATCHES_REPOSITORY_URL }}
+            VMANGOS_WORLD_DB_REPOSITORY_URL=${{ env.VMANGOS_WORLD_DB_REPOSITORY_URL }}
           tags: ${{ steps.generate-tags.outputs.result }}
           annotations: ${{ steps.generate-annotations.outputs.result }}
           labels: ${{ steps.generate-labels.outputs.result }}
