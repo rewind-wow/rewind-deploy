@@ -21,6 +21,8 @@ The script asks for:
 - Whether to build server and/or database images
 - Tags to apply (defaults: `vmangos-server:custom`, `vmangos-database:custom`)
 
+By default the script builds with `--pull --no-cache` to ensure fresh bases and code. Override with `DOCKER_BUILD_FLAGS` if you want to reuse cache, e.g. `DOCKER_BUILD_FLAGS="" bash scripts/build-custom-images.sh`.
+
 You can also build manually with `docker build` (see the “If you build the images yourself” section in the root README).
 
 ## Point Compose at your images
@@ -35,3 +37,13 @@ Edit `compose.yaml` so it uses the tags you built:
 - Start: `docker compose up -d` (run `docker compose pull` first if your images are in a registry).
 
 That’s it—your Compose stack will now run using the code from your fork/revision.
+
+## Rebuild and restart in one step
+
+To rebuild the images with the helper script and restart the stack:
+
+```sh
+bash scripts/rebuild-and-restart.sh
+```
+
+The script expects `compose.yaml` to exist in the repo root and will run `docker compose down` followed by `docker compose up -d`. If your setup requires sudo, prefix via `DOCKER_COMPOSE_CMD="sudo docker compose" bash scripts/rebuild-and-restart.sh`.

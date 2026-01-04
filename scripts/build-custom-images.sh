@@ -2,11 +2,14 @@
 
 set -euo pipefail
 
-default_repo_url="https://github.com/vmangos/core.git"
+default_repo_url="https://github.com/rewind-wow/classic"
 default_revision="development"
 default_world_db_repo_url="https://github.com/brotalnia/database.git"
 default_server_tag="vmangos-server:custom"
 default_database_tag="vmangos-database:custom"
+# Allow overriding docker build flags; default pulls latest base and disables cache
+# shellcheck disable=SC2206
+default_build_flags=(${DOCKER_BUILD_FLAGS:---pull --no-cache})
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -46,10 +49,11 @@ if ! $build_server && ! $build_database; then
   exit 0
 fi
 
-if $build_server; then
+if [[ "$build_server" == true ]]; then
   server_tag="$(prompt "Server image tag" "$default_server_tag")"
   echo "Building server image ($server_tag)..."
   docker build \
+    "${default_build_flags[@]}" \
     -f "$repo_root/docker/server/Dockerfile" \
     --build-arg "VMANGOS_REPOSITORY_URL=$repo_url" \
     --build-arg "VMANGOS_REVISION=$revision" \
@@ -57,10 +61,11 @@ if $build_server; then
     "$repo_root"
 fi
 
-if $build_database; then
+if [[ "$build_database" == true ]]; then
   database_tag="$(prompt "Database image tag" "$default_database_tag")"
   echo "Building database image ($database_tag)..."
   docker build \
+    "${default_build_flags[@]}" \
     -f "$repo_root/docker/database/Dockerfile" \
     --build-arg "VMANGOS_REPOSITORY_URL=$repo_url" \
     --build-arg "VMANGOS_REVISION=$revision" \
