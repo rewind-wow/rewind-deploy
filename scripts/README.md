@@ -69,10 +69,28 @@ Notes:
 
 ### Cron example
 
-Run every 5 minutes, logging output to a file:
+Step-by-step:
 
-```cron
-*/5 * * * * CORE_REPO_PATH=/path/to/core VMANGOS_REPOSITORY_URL=https://github.com/rewind-wow/experimental CORE_BRANCH=development VMANGOS_SERVER_TAG=vmangos-server:custom /usr/bin/sudo -E /bin/bash /path/to/rewind-deploy/scripts/monitor-core-and-redeploy.sh >> /var/log/vmangos-core-monitor.log 2>&1
+1) Make sure the user can run Docker without a password (recommended):
+```sh
+sudo usermod -aG docker <user>
+```
+Log out and back in after this change.
+
+2) Open the user crontab:
+```sh
+crontab -e
 ```
 
-If your setup requires sudo for Docker, you can add `DOCKER_COMPOSE_CMD="sudo docker compose"` to the environment portion of the cron line.
+3) Add a line like this (runs every 5 minutes and logs to a user-writable file):
+
+```cron
+*/5 * * * * CORE_REPO_PATH=/path/to/core VMANGOS_REPOSITORY_URL=https://github.com/rewind-wow/experimental CORE_BRANCH=development VMANGOS_SERVER_TAG=vmangos-server:custom /bin/bash /path/to/rewind-deploy/scripts/monitor-core-and-redeploy.sh >> /home/<user>/core-monitor.log 2>&1
+```
+
+Notes:
+- Put the cron line inside `crontab -e` and save; do not run it directly in the shell.
+- Use full paths in cron (`/bin/bash`, `/home/<user>/...`) since cron has a minimal PATH.
+- The log file must be writable by the cron user (avoid `/var/log` unless you change permissions).
+- The cron user must have write access to `CORE_REPO_PATH/.git` because `git fetch` updates files like `.git/FETCH_HEAD`.
+- If you must use sudo for Docker, add `DOCKER_COMPOSE_CMD="sudo docker compose"` and prefix the command with `/usr/bin/sudo -E`, but a password prompt will break cron. Prefer the `docker` group approach.
