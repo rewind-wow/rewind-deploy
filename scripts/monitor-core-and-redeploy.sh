@@ -112,12 +112,10 @@ run_once() {
   if [[ -z "$last_hash" && "$run_on_first_check" != "true" ]]; then
     mkdir -p "$(dirname "$state_file")"
     echo "$remote_hash" > "$state_file"
-    echo "No prior state; recorded $remote_hash."
     return 0
   fi
 
   if [[ "$remote_hash" == "$last_hash" ]]; then
-    echo "No update detected ($remote_hash)."
     return 0
   fi
 
