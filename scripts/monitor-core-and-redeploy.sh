@@ -13,6 +13,7 @@ core_remote="${CORE_REMOTE:-origin}"
 core_branch="${CORE_BRANCH:-development}"
 state_file="${STATE_FILE:-$repo_root/storage/core-monitor/last_seen}"
 log_file="${LOG_FILE:-$repo_root/storage/core-monitor/error.log}"
+lock_dir="${LOCK_DIR:-$repo_root/storage/core-monitor/lock}"
 run_on_first_check="${RUN_ON_FIRST_CHECK:-false}"
 check_interval_seconds="${CHECK_INTERVAL_SECONDS:-}"
 
@@ -89,6 +90,11 @@ get_remote_hash() {
 
 run_once() {
   local repo_url remote_hash last_hash
+  if ! mkdir "$lock_dir" 2>/dev/null; then
+    echo "Another monitor run is in progress; skipping."
+    return 0
+  fi
+  trap 'rmdir "$lock_dir" 2>/dev/null || true' EXIT
 
   repo_url="$(get_repo_url)"
   if [[ -z "$repo_url" ]]; then
