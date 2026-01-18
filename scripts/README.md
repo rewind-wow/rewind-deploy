@@ -58,7 +58,7 @@ VMANGOS_REPOSITORY_URL=https://github.com/rewind-wow/experimental \
 CORE_BRANCH=development \
 VMANGOS_SERVER_TAG=vmangos-server:custom \
 CHECK_INTERVAL_SECONDS=300 \
-bash scripts/monitor-core-and-redeploy.sh
+sudo -E bash scripts/monitor-core-and-redeploy.sh
 ```
 
 Notes:
@@ -72,7 +72,7 @@ Notes:
 Run every 5 minutes, logging output to a file:
 
 ```cron
-*/5 * * * * CORE_REPO_PATH=/path/to/core VMANGOS_REPOSITORY_URL=https://github.com/rewind-wow/experimental CORE_BRANCH=development VMANGOS_SERVER_TAG=vmangos-server:custom /bin/bash /path/to/rewind-deploy/scripts/monitor-core-and-redeploy.sh >> /var/log/vmangos-core-monitor.log 2>&1
+*/5 * * * * CORE_REPO_PATH=/path/to/core VMANGOS_REPOSITORY_URL=https://github.com/rewind-wow/experimental CORE_BRANCH=development VMANGOS_SERVER_TAG=vmangos-server:custom /usr/bin/sudo -E /bin/bash /path/to/rewind-deploy/scripts/monitor-core-and-redeploy.sh >> /var/log/vmangos-core-monitor.log 2>&1
 ```
 
 If your setup requires sudo for Docker, you can add `DOCKER_COMPOSE_CMD="sudo docker compose"` to the environment portion of the cron line.

@@ -12,6 +12,7 @@ core_repo_path="${CORE_REPO_PATH:-${1:-}}"
 core_remote="${CORE_REMOTE:-origin}"
 core_branch="${CORE_BRANCH:-development}"
 state_file="${STATE_FILE:-$repo_root/storage/core-monitor/last_seen}"
+log_file="${LOG_FILE:-$repo_root/storage/core-monitor/error.log}"
 run_on_first_check="${RUN_ON_FIRST_CHECK:-false}"
 check_interval_seconds="${CHECK_INTERVAL_SECONDS:-}"
 
@@ -30,6 +31,28 @@ normalize_bool() {
     n|no|false|0|"") echo "false" ;;
     *) echo "false" ;;
   esac
+}
+
+log_error() {
+  local message="$1"
+  mkdir -p "$(dirname "$log_file")"
+  printf '%s %s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$message" >> "$log_file"
+}
+
+run_cmd_capture() {
+  local label="$1"
+  shift
+  local tmp
+  tmp="$(mktemp)"
+  if "$@" >"$tmp" 2>&1; then
+    rm -f "$tmp"
+    return 0
+  fi
+  log_error "$label failed. Output:"
+  cat "$tmp" >> "$log_file"
+  echo >> "$log_file"
+  rm -f "$tmp"
+  return 1
 }
 
 build_server="$(normalize_bool "$build_server")"
@@ -96,25 +119,33 @@ run_once() {
 
   if [[ "$build_server" == "true" ]]; then
     echo "Building server image ($server_tag)..."
-    docker build \
+    if ! run_cmd_capture "Server build" docker build \
       "${default_build_flags[@]}" \
       -f "$repo_root/docker/server/Dockerfile" \
       --build-arg "VMANGOS_REPOSITORY_URL=$repo_url" \
       --build-arg "VMANGOS_REVISION=$remote_hash" \
       --tag "$server_tag" \
-      "$repo_root"
+      "$repo_root"; then
+      echo "Server build failed; leaving containers running and not updating state." >&2
+      echo "See $log_file for details." >&2
+      return 1
+    fi
   fi
 
   if [[ "$build_database" == "true" ]]; then
     echo "Building database image ($database_tag)..."
-    docker build \
+    if ! run_cmd_capture "Database build" docker build \
       "${default_build_flags[@]}" \
       -f "$repo_root/docker/database/Dockerfile" \
       --build-arg "VMANGOS_REPOSITORY_URL=$repo_url" \
       --build-arg "VMANGOS_REVISION=$remote_hash" \
       --build-arg "VMANGOS_WORLD_DB_REPOSITORY_URL=$world_db_repo_url" \
       --tag "$database_tag" \
-      "$repo_root"
+      "$repo_root"; then
+      echo "Database build failed; leaving containers running and not updating state." >&2
+      echo "See $log_file for details." >&2
+      return 1
+    fi
   fi
 
   echo "Recreating containers..."
