@@ -66,6 +66,7 @@ Notes:
 - If `VMANGOS_REPOSITORY_URL` is not set, the script uses the `origin` remote URL from `CORE_REPO_PATH`. This should be an HTTPS URL if Docker builds need to clone without SSH credentials.
 - Set `BUILD_DATABASE=true` if you also want to rebuild the database image.
 - For cron, omit `CHECK_INTERVAL_SECONDS` and schedule the script at your desired interval.
+- The script stores status and hash in `storage/core-monitor/last_seen` (format: `ok <hash>` or `fail <hash>`). A `fail` entry is skipped until a new commit appears or you delete the file.
 
 ### Cron example
 

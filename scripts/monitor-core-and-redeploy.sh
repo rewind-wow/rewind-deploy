@@ -89,7 +89,7 @@ get_remote_hash() {
 }
 
 run_once() {
-  local repo_url remote_hash last_hash
+  local repo_url remote_hash last_hash last_status
   if ! mkdir "$lock_dir" 2>/dev/null; then
     echo "Another monitor run is in progress; skipping."
     return 0
@@ -104,8 +104,9 @@ run_once() {
 
   remote_hash="$(get_remote_hash)"
   if [[ -f "$state_file" ]]; then
-    last_hash="$(cat "$state_file")"
+    read -r last_status last_hash < "$state_file" || true
   else
+    last_status=""
     last_hash=""
   fi
 
@@ -115,7 +116,12 @@ run_once() {
     return 0
   fi
 
-  if [[ "$remote_hash" == "$last_hash" ]]; then
+  if [[ "$remote_hash" == "$last_hash" && "$last_status" != "fail" ]]; then
+    return 0
+  fi
+
+  if [[ "$last_status" == "fail" && "$remote_hash" == "$last_hash" ]]; then
+    echo "Skipping $remote_hash; previous build failed. Clear $state_file to retry."
     return 0
   fi
 
@@ -132,6 +138,8 @@ run_once() {
       "$repo_root"; then
       echo "Server build failed; leaving containers running and not updating state." >&2
       echo "See $log_file for details." >&2
+      mkdir -p "$(dirname "$state_file")"
+      echo "fail $remote_hash" > "$state_file"
       return 1
     fi
   fi
@@ -148,6 +156,8 @@ run_once() {
       "$repo_root"; then
       echo "Database build failed; leaving containers running and not updating state." >&2
       echo "See $log_file for details." >&2
+      mkdir -p "$(dirname "$state_file")"
+      echo "fail $remote_hash" > "$state_file"
       return 1
     fi
   fi
@@ -157,7 +167,7 @@ run_once() {
   "${compose_cmd[@]}" -f "$compose_file" up -d
 
   mkdir -p "$(dirname "$state_file")"
-  echo "$remote_hash" > "$state_file"
+  echo "ok $remote_hash" > "$state_file"
 }
 
 if [[ -n "$check_interval_seconds" ]]; then
