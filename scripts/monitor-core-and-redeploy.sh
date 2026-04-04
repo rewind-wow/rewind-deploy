@@ -281,13 +281,13 @@ process_core_update() {
 }
 
 process_dbc_update() {
-  local dbc_branch="" remote_hash="" last_hash="" last_status="" dbc_remote_info=""
+  local detected_dbc_branch="" remote_hash="" last_hash="" last_status="" dbc_remote_info=""
 
   if ! dbc_remote_info="$(get_dbc_remote_info)"; then
     echo "Unable to query the DBC remote. See $log_file for details." >&2
     return 1
   fi
-  read -r dbc_branch remote_hash <<<"$dbc_remote_info"
+  read -r detected_dbc_branch remote_hash <<<"$dbc_remote_info"
 
   read_state "$dbc_state_file" last_status last_hash
 
@@ -307,9 +307,9 @@ process_dbc_update() {
 
   echo "DBC update detected: ${last_hash:-none} -> $remote_hash"
   log_info "DBC update detected: ${last_hash:-none} -> $remote_hash"
-  echo "Pulling DBC repository ($dbc_branch)..."
-  log_info "Pulling DBC repository ($dbc_branch)..."
-  if ! run_cmd_capture "DBC pull" git -C "$dbc_repo_path" pull --ff-only "$dbc_repo_url" "$dbc_branch"; then
+  echo "Pulling DBC repository ($detected_dbc_branch)..."
+  log_info "Pulling DBC repository ($detected_dbc_branch)..."
+  if ! run_cmd_capture "DBC pull" git -C "$dbc_repo_path" pull --ff-only "$dbc_remote" "$detected_dbc_branch"; then
     echo "DBC pull failed; leaving containers running and not updating state." >&2
     echo "See $log_file for details." >&2
     write_state "$dbc_state_file" "fail" "$remote_hash"
