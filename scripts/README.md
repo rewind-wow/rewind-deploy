@@ -50,7 +50,7 @@ The script expects `compose.yaml` to exist in the repo root and will run `docker
 
 ## Monitor the core repo and redeploy
 
-Use this if you want a standalone script that checks a local core repo for new commits and, when a new commit is detected, rebuilds and restarts the stack:
+Use this if you want a standalone script that checks a local core repo for new commits and, when a new commit is detected, rebuilds and restarts the stack. The same script also monitors a separate DBC repository and, when that repository changes, pulls it locally and restarts the stack without rebuilding images:
 
 ```sh
 CORE_REPO_PATH=/path/to/core \
@@ -65,8 +65,13 @@ Notes:
 - `CORE_REPO_PATH` is required (or pass it as the first argument).
 - If `VMANGOS_REPOSITORY_URL` is not set, the script uses the `origin` remote URL from `CORE_REPO_PATH`. This should be an HTTPS URL if Docker builds need to clone without SSH credentials.
 - Set `BUILD_DATABASE=true` if you also want to rebuild the database image.
+- By default the DBC monitor watches `/home/vmangos/rewind-deploy/storage/mangosd/extracted-data/5875/dbc` against `https://github.com/rewind-wow/experimental-dbcs`. Override with `DBC_REPO_PATH` and `DBC_REPOSITORY_URL` if needed, or set `MONITOR_DBC_REPO=false` to disable it.
 - For cron, omit `CHECK_INTERVAL_SECONDS` and schedule the script at your desired interval.
-- The script stores status and hash in `storage/core-monitor/last_seen` (format: `ok <hash>` or `fail <hash>`). A `fail` entry is skipped until a new commit appears or you delete the file.
+- The core repo state is stored in `storage/core-monitor/last_seen` and the DBC repo state is stored in `storage/core-monitor/dbc_last_seen` (format: `ok <hash>` or `fail <hash>`).
+- Informational update events are written to `storage/core-monitor/core-monitor.log` by default. Override with `MONITOR_LOG_FILE` if needed.
+- Errors are written to `storage/core-monitor/error.log` by default. Override with `LOG_FILE` if needed.
+- Both repositories share the same lock directory, `storage/core-monitor/lock`, so only one monitor run can perform updates at a time.
+- A `fail` entry is skipped until a new commit appears or you delete the corresponding state file.
 
 ### Cron example
 
