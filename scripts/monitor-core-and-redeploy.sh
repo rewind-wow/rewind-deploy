@@ -105,6 +105,11 @@ run_once() {
   remote_hash="$(get_remote_hash)"
   if [[ -f "$state_file" ]]; then
     read -r last_status last_hash < "$state_file" || true
+    if [[ -z "$last_hash" && -n "$last_status" && "$last_status" != "ok" && "$last_status" != "fail" ]]; then
+      # Backward compatibility for the initial one-field state format.
+      last_hash="$last_status"
+      last_status="ok"
+    fi
   else
     last_status=""
     last_hash=""
@@ -112,7 +117,7 @@ run_once() {
 
   if [[ -z "$last_hash" && "$run_on_first_check" != "true" ]]; then
     mkdir -p "$(dirname "$state_file")"
-    echo "$remote_hash" > "$state_file"
+    echo "ok $remote_hash" > "$state_file"
     return 0
   fi
 
