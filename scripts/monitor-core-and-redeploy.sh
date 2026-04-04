@@ -13,7 +13,8 @@ core_remote="${CORE_REMOTE:-origin}"
 core_branch="${CORE_BRANCH:-development}"
 state_file="${STATE_FILE:-$repo_root/storage/core-monitor/last_seen}"
 dbc_repo_path="${DBC_REPO_PATH:-/home/vmangos/rewind-deploy/storage/mangosd/extracted-data/5875/dbc}"
-dbc_repo_url="${DBC_REPOSITORY_URL:-https://github.com/rewind-wow/experimental-dbcs}"
+dbc_remote="${DBC_REMOTE:-origin}"
+dbc_branch="${DBC_BRANCH:-main}"
 dbc_state_file="${DBC_STATE_FILE:-$repo_root/storage/core-monitor/dbc_last_seen}"
 monitor_dbc_repo="${MONITOR_DBC_REPO:-true}"
 monitor_log_file="${MONITOR_LOG_FILE:-$repo_root/storage/core-monitor/core-monitor.log}"
@@ -147,20 +148,16 @@ get_remote_hash() {
 }
 
 get_dbc_remote_info() {
-  local remote_info branch hash
-  if ! run_cmd_capture_output remote_info "DBC remote HEAD lookup" git ls-remote --symref "$dbc_repo_url" HEAD; then
+  local hash
+  if ! run_cmd_capture_output hash "DBC fetch" git -C "$dbc_repo_path" fetch --prune "$dbc_remote"; then
     return 1
   fi
 
-  branch="$(awk '/^ref:/ { print $2; exit }' <<<"$remote_info")"
-  hash="$(awk '$2 == "HEAD" { print $1; exit }' <<<"$remote_info")"
-
-  if [[ -z "$branch" || -z "$hash" ]]; then
-    log_error "DBC remote HEAD did not return a branch and hash."
+  if ! run_cmd_capture_output hash "DBC revision lookup" git -C "$dbc_repo_path" rev-parse "$dbc_remote/$dbc_branch"; then
     return 1
   fi
 
-  printf '%s %s\n' "${branch#refs/heads/}" "$hash"
+  printf '%s %s\n' "$dbc_branch" "$hash"
 }
 
 read_state() {
