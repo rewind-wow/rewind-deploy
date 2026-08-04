@@ -13,6 +13,12 @@ from typing import Sequence
 from .preflight import CheckResult, PreflightConfig, run_preflight
 
 
+def run_interactive_shell(_args: argparse.Namespace | None = None) -> int:
+    from .shell import run_shell
+
+    return run_shell()
+
+
 @dataclass(frozen=True)
 class CliConfig:
     """Values collected from command-line arguments."""
@@ -25,7 +31,17 @@ def build_parser() -> argparse.ArgumentParser:
         prog="map-rebuild",
         description="Safely rebuild VMaNGOS map data on a remote Docker host.",
     )
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command")
+
+    shell = subparsers.add_parser(
+        "shell",
+        help="Start the friendly interactive session.",
+        description=(
+            "Start an interactive session that asks for connection settings "
+            "and lets you change them while working."
+        ),
+    )
+    shell.set_defaults(handler=run_interactive_shell)
 
     check = subparsers.add_parser(
         "check",
@@ -130,6 +146,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Do not inspect the Docker image locally or remotely.",
     )
+    check.set_defaults(handler=run_check)
     return parser
 
 
@@ -206,10 +223,9 @@ def run_check(args: argparse.Namespace) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if args.command == "check":
-        return run_check(args)
-    parser.error(f"unknown command: {args.command}")
-    return 2
+    if args.command is None:
+        return run_interactive_shell()
+    return args.handler(args)
 
 
 if __name__ == "__main__":

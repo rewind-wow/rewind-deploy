@@ -1,9 +1,17 @@
 # Map rebuild tool
 
-This is the first part of the Noggit-to-VMaNGOS workflow: a read-only remote
-preflight command. It checks whether a later synchronization and extraction
-can run, but it does not upload client files, run extractors, stop containers,
-or modify deployed map data.
+This is the first part of the Noggit-to-VMaNGOS workflow: a friendly
+interactive shell and a read-only remote preflight command. It checks whether a
+later synchronization and extraction can run, but it does not upload client
+files, run extractors, stop containers, or modify deployed map data.
+
+The intended user experience is the interactive shell. It asks for the needed
+connection and server details at startup, keeps them in memory for the session,
+and allows them to be changed without restarting the program. Non-secret
+settings can be saved in named JSON profiles. SSH passwords are never saved and
+are entered again when a password-authenticated profile is loaded. Future
+commands for synchronizing Noggit ADTs, extracting maps, and deploying the
+result will use the same session.
 
 ## Windows support
 
@@ -43,7 +51,119 @@ ssh vmangos@example.org
 After verifying the host key, exit the session. Alternatively, pass an
 explicit known-hosts file with `--known-hosts`.
 
-## Run the read-only check
+## Start the interactive shell
+
+Start the shell without arguments:
+
+```powershell
+map-rebuild
+```
+
+Or explicitly:
+
+```powershell
+map-rebuild shell
+```
+
+It asks for:
+
+1. Remote server address.
+2. SSH user.
+3. SSH port.
+4. Authentication method.
+5. SSH `known_hosts` file.
+6. WoW client version.
+7. VMaNGOS server image.
+8. Remote complete client-data cache.
+9. Remote build/staging directory.
+10. Remote deployed extracted-data directory.
+11. Remote Compose file and service.
+12. Disk-space and SSH timeout thresholds.
+
+The shell then provides:
+
+```text
+check       Run the read-only preflight
+show        Display current settings without displaying the password
+configure   Ask all startup questions again
+set         Change one setting during the session
+save        Save non-secret settings to a JSON profile
+profiles    List saved profiles
+use NAME    Switch profiles
+new NAME    Configure a new profile
+help        Show commands
+exit        Leave the shell
+```
+
+## Saved profiles
+
+The shell stores non-secret settings in a per-user JSON file:
+
+```text
+Windows: %APPDATA%\RewindWoW\map-rebuild\config.json
+macOS:   ~/Library/Application Support/RewindWoW/map-rebuild/config.json
+Linux:   ~/.config/rewind-wow/map-rebuild/config.json
+```
+
+The first configured session uses the `production` profile by default. Save it
+explicitly:
+
+```text
+map-rebuild> save
+Saved profile 'production' ...
+The SSH password was not saved; it will be requested next time.
+```
+
+The JSON contains server paths, client version, image, SSH user, and other
+settings, but never contains the SSH password. It is written atomically so an
+interrupted save does not replace a valid configuration with a partial file.
+On Unix-like systems it is also written with user-only permissions.
+
+Profiles are useful when the user has multiple servers:
+
+```text
+map-rebuild> new staging
+# answer the setup questions
+map-rebuild> save
+map-rebuild> profiles
+production
+staging (active)
+map-rebuild> use production
+map-rebuild> use staging
+map-rebuild> delete staging
+```
+
+Available profile commands:
+
+```text
+save                  Save current non-secret settings
+profiles              List saved profiles
+use NAME              Switch profiles
+new NAME              Configure a new profile
+delete [NAME]         Delete a profile
+reload                Reload profiles from disk
+```
+
+When switching or exiting with unsaved changes, the shell asks for
+confirmation. Passwords are held only in memory and must be entered again on a
+future launch for password-authenticated profiles.
+
+Examples inside the shell:
+
+```text
+map-rebuild> show
+map-rebuild> check
+map-rebuild> set host new-server.example.org
+map-rebuild> set client_version 5875
+map-rebuild> set password
+map-rebuild> configure
+map-rebuild> exit
+```
+
+`set password` asks for the replacement password without echoing it. Secrets
+are kept only in memory for the current process and are never shown by `show`.
+
+## Run the read-only check directly
 
 Using a private key is preferred:
 
